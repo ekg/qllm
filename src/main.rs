@@ -80,6 +80,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let mut stream = response.bytes_stream();
+    let mut first = true;
 
     while let Some(item) = stream.next().await {
         match item {
@@ -91,6 +92,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if let Some(json_str) = line.strip_prefix("data: ") {
                     if let Ok(parsed) = serde_json::from_str::<Value>(json_str) {
                         if let Some(text) = parsed["choices"][0]["text"].as_str() {
+                            let mut text = text;
+                            if first {
+                                // trim the leading space from the first response
+                                text = text.trim_start();
+                                first = false;
+                            }
                             print!("{}", text);
                             // flush stdout to make sure the text is visible immediately
                             std::io::stdout().flush().unwrap();
