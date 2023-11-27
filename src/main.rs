@@ -22,6 +22,10 @@ struct Args {
     #[clap(short, long, required = false, default_value = "Help the user with their task.")]
     system: String,
 
+    /// Flag to say if we should read from stdin, use -c as the single character version
+    #[clap(short = 'c', long)]
+    stdin: bool,
+
     /// The positional argument is the user prompt
     #[clap(name = "PROMPT", required = true)]
     prompt: Vec<String>,
@@ -34,13 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Check for stdin data using select
     let mut stdin = async_io::stdin();
     let mut input = String::new();
-    tokio::select! {
-        _ = stdin.read_to_string(&mut input) => {
-            // If there's input, proceed without waiting further
-        }
-        _ = tokio::time::sleep(tokio::time::Duration::from_millis(100)) => {
-            // If there's no input within 100 milliseconds, proceed without waiting further
-        }
+    // if we read from stdin
+    if args.stdin {
+        // read from stdin
+        stdin.read_to_string(&mut input).await?;
     }
 
     // format should be like this 
@@ -49,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let user_prompt_prefix = "USER:";
     let mut user_prompt = args.prompt.join(" ");
     if !input.is_empty() {
-        user_prompt = format!("{} {} {}", user_prompt_prefix, user_prompt, input);
+        user_prompt = format!("{} {}\n{}", user_prompt_prefix, user_prompt, input);
     }
     let assistant_prompt_prefix = "ASSISTANT:";
     let prompt = format!(
@@ -75,20 +76,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let mut stream = response.bytes_stream();
-    let mut more = true;
 
     while let Some(item) = stream.next().await {
         match item {
             Ok(bytes) => {
                 let line = String::from_utf8_lossy(&bytes).trim().to_string();
-                //println!("{}", line);
                 if line == "data: [DONE]" {
-                    //println!("DONE");
                     break;
                 }
                 if let Some(json_str) = line.strip_prefix("data: ") {
                     if let Ok(parsed) = serde_json::from_str::<Value>(json_str) {
-                        //println!("JSON: {}", parsed);
                         if let Some(text) = parsed["choices"][0]["text"].as_str() {
                             print!("{}", text);
                             // flush stdout to make sure the text is visible immediately
