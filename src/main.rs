@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let user_prompt_prefix = "USER:";
     let mut user_prompt = args.prompt.join(" ");
     if !input.is_empty() {
-        user_prompt = format!("{} {}\n{}", user_prompt_prefix, user_prompt, input);
+        user_prompt = format!("{} {}\n{}", user_prompt_prefix, input, user_prompt);
     }
     let assistant_prompt_prefix = "ASSISTANT:";
     let prompt = format!(
