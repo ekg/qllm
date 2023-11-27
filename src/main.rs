@@ -1,7 +1,5 @@
 use clap::Parser;
-use reqwest;
 use serde_json::{json, Value};
-use tokio;
 use std::io::Write;
 use tokio::io::{self as async_io, AsyncReadExt};
 use tokio_stream::{self, StreamExt};
@@ -21,6 +19,10 @@ struct Args {
     /// Sets the system prompt
     #[clap(short, long, required = false, default_value = "Help the user with their task.")]
     system: String,
+
+    /// Sets the debug flag
+    #[clap(short, long)]
+    debug: bool,
 
     /// Flag to say if we should read from stdin, use -c as the single character version
     #[clap(short = 'c', long)]
@@ -45,7 +47,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // format should be like this 
-    //"SYSTEM: You are an assistant. Do exactly as the user asks. Write very long replies. They must be at least 1000 words, even to trivial requests. USER: Hello! How are you today? Write me an essay. ASSISTANT:"
+    //"SYSTEM: You are ... USER: Do ... ASSISTANT:"
     let system_prompt = format!("SYSTEM: {}", args.system);
     let user_prompt_prefix = "USER:";
     let mut user_prompt = args.prompt.join(" ");
@@ -59,7 +61,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         user_prompt,
         assistant_prompt_prefix
     );
-    println!("Prompt: {}", prompt);
+    if args.debug {
+        println!("Prompt: {}", prompt);
+    }
     
     let client = reqwest::Client::new();
     let payload = json!({
