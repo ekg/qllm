@@ -28,6 +28,10 @@ struct Args {
     #[clap(short = 'c', long)]
     stdin: bool,
 
+    /// No instruction prompt
+    #[clap(short, long)]
+    no_instruct: bool,
+
     /// The positional argument is the user prompt
     #[clap(name = "PROMPT", required = true)]
     prompt: Vec<String>,
@@ -55,12 +59,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         user_prompt = format!("{} {}\n{}", user_prompt_prefix, input, user_prompt);
     }
     let assistant_prompt_prefix = "ASSISTANT:";
-    let prompt = format!(
-        "{}\n{}\n{}",
-        system_prompt,
-        user_prompt,
-        assistant_prompt_prefix
-    );
+    let prompt = if args.no_instruct {
+        user_prompt
+    } else {
+        format!(
+            "{}\n{}\n{}",
+            system_prompt,
+            user_prompt,
+            assistant_prompt_prefix)
+    };
     if args.debug {
         println!("Prompt: {}", prompt);
     }
