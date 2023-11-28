@@ -20,10 +20,6 @@ struct Args {
     #[clap(short, long, required = false, default_value = "Help the user with their task.")]
     system: String,
 
-    /// Sets the debug flag
-    #[clap(short, long)]
-    debug: bool,
-
     /// Flag to say if we should read from stdin, use -c as the single character version
     #[clap(short = 'c', long)]
     stdin: bool,
@@ -35,6 +31,10 @@ struct Args {
     /// The positional argument is the user prompt
     #[clap(name = "PROMPT", required = true)]
     prompt: Vec<String>,
+
+    /// Copy full prompt to the output, to make the output suitable for recursive use
+    #[clap(short, long)]
+    recurse: bool,
 }
 
 #[tokio::main]
@@ -68,8 +68,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             user_prompt,
             assistant_prompt_prefix)
     };
-    if args.debug {
-        println!("Prompt: {}", prompt);
+    if args.recurse {
+        println!("{}", prompt);
     }
     
     let client = reqwest::Client::new();
