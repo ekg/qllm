@@ -134,20 +134,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // format should be like this 
     //"SYSTEM: You are ... USER: Do ... ASSISTANT:"
     let system_prompt = format!("SYSTEM: {}", args.system);
-    let user_prompt_prefix = "USER:";
+    let user_prompt_prefix = "USER: ";
     let mut user_prompt = args.prompt.join(" ");
     if !input.is_empty() {
-        user_prompt = format!("{} {}\n{}", user_prompt_prefix, input, user_prompt);
+        user_prompt = format!("{}\n{}", input, user_prompt);
     } else {
-        user_prompt = format!("{} {}", user_prompt_prefix, user_prompt);
+        user_prompt = format!("{}", user_prompt);
     }
     let assistant_prompt_prefix = "ASSISTANT: ";
     let prompt = if args.no_instruct {
         user_prompt
     } else {
         format!(
-            "{}\n{}\n{}",
+            "{}\n{}{}\n{}",
             system_prompt,
+            user_prompt_prefix,
             user_prompt,
             assistant_prompt_prefix)
     };
