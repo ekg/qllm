@@ -49,7 +49,7 @@ struct Args {
     top_p: f64,
 
     /// the min_p parameter for the model
-    #[clap(long), default_value = "0.0"]
+    #[clap(long, default_value = "0.0")]
     min_p: f64,
 
     /// the top_k parameter for the model
