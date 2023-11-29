@@ -155,12 +155,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let models = json!({
         "model": args.model,
         "prompt": prompt,
-        "max_tokens": 10000,
         "stream": true,
         "max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
         "top_p": args.top_p,
         "top_k": args.top_k,
+        "min_p": args.min_p,
         "repetition_penalty": args.repetition_penalty,
         "presence_penalty": args.presence_penalty,
         "frequency_penalty": args.frequency_penalty,
