@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::env;
 use serde_json::{json, Value};
 use std::io::Write;
 use tokio::io::{self as async_io, AsyncReadExt};
@@ -8,31 +9,31 @@ use tokio_stream::{self, StreamExt};
 #[clap(author, version, about, long_about = None)]
 struct Args {
 
-    /// the model name.
+    /// the model name
     #[clap(short, long, default_value = "default")]
     model: String,
 
-    /// the endpoint.
-    #[clap(short, long, default_value = "http://localhost:7000/v1/completions")]
+    /// the endpoint, taken from the environment variable QLLM_ENDPOINT if not specified
+    #[clap(short, long, required = false, default_value = "")]
     endpoint: String,
 
     /// the system prompt
     #[clap(short, long, required = false, default_value = "Help the user with their task.")]
     system: String,
 
-    /// Flag to say if we should read from stdin, use -c as the single character version
+    /// flag to say if we should read from stdin, use -c as the single character version
     #[clap(short = 'c', long)]
     stdin: bool,
 
-    /// No instruction prompt, just continuation of input
+    /// no instruction prompt, just continuation of input
     #[clap(short, long)]
     no_instruct: bool,
 
-    /// The positional argument is the user prompt
+    /// the positional argument is the user prompt
     #[clap(name = "PROMPT", required = true)]
     prompt: Vec<String>,
 
-    /// Copy full prompt to the output, to make the output suitable for recursive use
+    /// copy full prompt to the output, to make the output suitable for recursive use
     #[clap(short, long)]
     recurse: bool,
 
@@ -109,6 +110,14 @@ struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
 
+    let endpoint = if !args.endpoint.is_empty() {
+        args.endpoint.clone()
+    } else if env::var_os("QLLM_ENDPOINT").is_some() {
+        std::env::var("QLLM_ENDPOINT")?
+    } else {
+        return Err("No endpoint specified. One must be given on the command line via -e or via the environmental variable QLLM_ENDPOINT.".into());
+    };
+
     // Check for stdin data using select
     let mut stdin = async_io::stdin();
     let mut input = String::new();
@@ -164,7 +173,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "do_sample": args.do_sample
     });
 
-    let response = client.post(&args.endpoint)
+    let response = client.post(&endpoint)
         .header("Content-Type", "application/json")
         .json(&models)
         .send()
