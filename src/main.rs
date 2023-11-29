@@ -134,8 +134,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut user_prompt = args.prompt.join(" ");
     if !input.is_empty() {
         user_prompt = format!("{} {}\n{}", user_prompt_prefix, input, user_prompt);
+    } else {
+        user_prompt = format!("{} {}", user_prompt_prefix, user_prompt);
     }
-    let assistant_prompt_prefix = "ASSIST:";
+    let assistant_prompt_prefix = "ASSISTANT: ";
     let prompt = if args.no_instruct {
         user_prompt
     } else {
@@ -146,7 +148,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             assistant_prompt_prefix)
     };
     if args.recurse {
-        println!("{}", prompt);
+        print!("{}", prompt);
     }
 
     let client = reqwest::Client::new();
