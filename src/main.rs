@@ -191,8 +191,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "stream": true
     });
 
-    println!("request: {}", models);
-
     let response = client.post(&endpoint)
         .header("Content-Type", "application/json")
         .bearer_auth(key.unwrap_or_default())
