@@ -50,11 +50,11 @@ struct Args {
     temperature: f64,
 
     /// the top_p parameter for the model
-    #[clap(long, default_value = "0.95")]
+    #[clap(long, default_value = "0.9")]
     top_p: f64,
 
     /// the min_p parameter for the model
-    #[clap(long, default_value = "0.05")]
+    #[clap(long, default_value = "0.1")]
     min_p: f64,
 
     /// the top_k parameter for the model
@@ -64,6 +64,10 @@ struct Args {
     /// the repetition penalty for the model
     #[clap(long, default_value = "1.15")]
     repetition_penalty: f64,
+
+    /// the token set to consider for repetition penalty
+    #[clap(long, default_value = "64")]
+    repetition_penalty_last: usize,
 
     /// the presence penalty for the model
     #[clap(long, default_value = "0.0")]
@@ -176,7 +180,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "top_p": args.top_p,
         "top_k": args.top_k,
         "min_p": args.min_p,
+        /*
         "repetition_penalty": args.repetition_penalty,
+        "repetition_penalty_last": args.repetition_penalty_last,
         "presence_penalty": args.presence_penalty,
         "frequency_penalty": args.frequency_penalty,
         "repetition_penalty_range": args.repetition_penalty_range,
@@ -188,6 +194,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "mirostat_eta": args.mirostat_eta,
         "temperature_last": args.temperature_last,
         "do_sample": args.do_sample,
+        */
         "stream": true
     });
 
