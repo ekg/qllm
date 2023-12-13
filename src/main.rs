@@ -17,6 +17,10 @@ struct Args {
     #[clap(short, long, required = false, default_value = "")]
     endpoint: String,
 
+    /// the api key, which is taken from the environment variable QLLM_KEY if not specified
+    #[clap(short, long, required = false, default_value = "")]
+    key: String,
+
     /// the system prompt
     #[clap(short, long, required = false, default_value = "Help the user with their task.")]
     system: String,
@@ -37,28 +41,24 @@ struct Args {
     #[clap(short, long)]
     recurse: bool,
 
-    ///// the model context length
-    //#[clap(short = 'x', long, default_value = "200000")]
-    //max_tokens: usize,
-
     /// context length
-    #[clap(short = 'l', long, default_value = "65536")]
-    max_tokens: usize,
+    #[clap(short = 'l', long, default_value = "-1")]
+    max_tokens: i64,
 
     /// the temperature parameter for the model
     #[clap(short, long, default_value = "0.7")]
     temperature: f64,
 
     /// the top_p parameter for the model
-    #[clap(long, default_value = "0.9")]
+    #[clap(long, default_value = "0.95")]
     top_p: f64,
 
     /// the min_p parameter for the model
-    #[clap(long, default_value = "0.0")]
+    #[clap(long, default_value = "0.05")]
     min_p: f64,
 
     /// the top_k parameter for the model
-    #[clap(long, default_value = "20")]
+    #[clap(long, default_value = "40")]
     top_k: usize,
 
     /// the repetition penalty for the model
@@ -122,6 +122,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Err("No endpoint specified. One must be given on the command line via -e or via the environmental variable QLLM_ENDPOINT.".into());
     };
 
+    // set a key if we have one in the environment under QLLM_KEY
+    let key = if !args.key.is_empty() {
+        Some(args.key.clone())
+    } else if env::var_os("QLLM_KEY").is_some() {
+        Some(std::env::var("QLLM_KEY")?)
+    } else {
+        None
+    };
+
     // Check for stdin data using select
     let mut stdin = async_io::stdin();
     let mut input = String::new();
@@ -139,17 +148,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !input.is_empty() {
         user_prompt = format!("{}\n{}", input, user_prompt);
     } else {
-        user_prompt = format!("{}", user_prompt);
+        user_prompt = user_prompt.to_string();
     }
     let assistant_prompt_prefix = "ASSISTANT: ";
     let prompt = if args.no_instruct {
-        user_prompt
+        user_prompt.clone()
     } else {
         format!(
             "{}\n{}{}\n{}",
             system_prompt,
             user_prompt_prefix,
-            user_prompt,
+            user_prompt.clone(),
             assistant_prompt_prefix)
     };
     if args.recurse {
@@ -158,12 +167,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let client = reqwest::Client::new();
     let models = json!({
-        "model": args.model,
-        "prompt": prompt,
-        "stream": true,
-        // unclear why we have this limit
+        "messages": [
+            { "role": "system", "content": args.system },
+            { "role": "user", "content": user_prompt },
+        ],
         "max_tokens": args.max_tokens,
-        //"max_new_tokens": args.max_new_tokens,
         "temperature": args.temperature,
         "top_p": args.top_p,
         "top_k": args.top_k,
@@ -179,11 +187,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "mirostat_tau": args.mirostat_tau,
         "mirostat_eta": args.mirostat_eta,
         "temperature_last": args.temperature_last,
-        "do_sample": args.do_sample
+        "do_sample": args.do_sample,
+        "stream": true
     });
+
+    println!("request: {}", models);
 
     let response = client.post(&endpoint)
         .header("Content-Type", "application/json")
+        .bearer_auth(key.unwrap_or_default())
         .json(&models)
         .send()
         .await?;
@@ -200,7 +212,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 if let Some(json_str) = line.strip_prefix("data: ") {
                     if let Ok(parsed) = serde_json::from_str::<Value>(json_str) {
-                        if let Some(text) = parsed["choices"][0]["text"].as_str() {
+                        if let Some(text) = parsed["choices"][0]["delta"]["content"].as_str() {
                             let mut text = text;
                             if first {
                                 // trim the leading space from the first response
