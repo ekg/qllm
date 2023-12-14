@@ -129,29 +129,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         stdin.read_to_string(&mut input).await?;
     }
 
-    // format should be like this 
-    //"SYSTEM: You are ... USER: Do ... ASSISTANT:"
-    let system_prompt = format!("SYSTEM: {}", args.system);
-    let user_prompt_prefix = "USER: ";
     let mut user_prompt = args.prompt.join(" ");
     if !input.is_empty() {
         user_prompt = format!("{}\n{}", input, user_prompt);
     } else {
         user_prompt = user_prompt.to_string();
-    }
-    let assistant_prompt_prefix = "ASSISTANT: ";
-    let prompt = if args.no_instruct {
-        user_prompt.clone()
-    } else {
-        format!(
-            "{}\n{}{}\n{}",
-            system_prompt,
-            user_prompt_prefix,
-            user_prompt.clone(),
-            assistant_prompt_prefix)
-    };
-    if args.recurse {
-        print!("{}", prompt);
     }
 
     let client = reqwest::Client::new();
