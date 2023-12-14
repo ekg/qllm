@@ -5,10 +5,15 @@ use std::io::Write;
 use tokio::io::{self as async_io, AsyncReadExt};
 use tokio_stream::{self, StreamExt};
 
+/*
+    repeat_last_n = 64, repeat_penalty = 1.100, frequency_penalty = 0.000, presence_penalty = 0.000
+    top_k = 40, tfs_z = 1.000, top_p = 0.950, min_p = 0.050, typical_p = 1.000, temp = 0.800
+    mirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000
+*/
+
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-
     /// the model name
     #[clap(short, long, default_value = "default")]
     model: String,
@@ -46,15 +51,15 @@ struct Args {
     max_tokens: i64,
 
     /// the temperature parameter for the model
-    #[clap(short, long, default_value = "0.7")]
+    #[clap(short, long, default_value = "0.8")]
     temperature: f64,
 
     /// the top_p parameter for the model
-    #[clap(long, default_value = "0.9")]
+    #[clap(long, default_value = "0.95")]
     top_p: f64,
 
     /// the min_p parameter for the model
-    #[clap(long, default_value = "0.1")]
+    #[clap(long, default_value = "0.05")]
     min_p: f64,
 
     /// the top_k parameter for the model
@@ -62,7 +67,7 @@ struct Args {
     top_k: usize,
 
     /// the repetition penalty for the model
-    #[clap(long, default_value = "1.15")]
+    #[clap(long, default_value = "1.1")]
     repetition_penalty: f64,
 
     /// the token set to consider for repetition penalty
@@ -77,41 +82,21 @@ struct Args {
     #[clap(long, default_value = "0.0")]
     frequency_penalty: f64,
 
-    /// the repetition penalty range for the model
-    #[clap(long, default_value = "0.0")]
-    repetition_penalty_range: f64,
-
     /// the typical p parameter for the model
     #[clap(long, default_value = "1.0")]
     typical_p: f64,
-
-    /// the guidance scale for the model
-    #[clap(long, default_value = "1.0")]
-    guidance_scale: f64,
-
-    /// the penalty alpha parameter for the model
-    #[clap(long, default_value = "0.0")]
-    penalty_alpha: f64,
 
     /// the mirostat mode for the model
     #[clap(long, default_value = "0")]
     mirostat_mode: u8,
 
     /// the mirostat tau parameter for the model
-    #[clap(long, default_value = "5")]
+    #[clap(long, default_value = "5.0")]
     mirostat_tau: f64,
 
     /// the mirostat eta parameter for the model
     #[clap(long, default_value = "0.1")]
-    mirostat_eta: f64,
-
-    /// whether the temperature should be applied to the last token
-    #[clap(long)]
-    temperature_last: bool,
-
-    /// whether the model should do sampling
-    #[clap(long)]
-    do_sample: bool
+    mirostat_eta: f64
 }
 
 #[tokio::main]
@@ -180,21 +165,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "top_p": args.top_p,
         "top_k": args.top_k,
         "min_p": args.min_p,
-        /*
         "repetition_penalty": args.repetition_penalty,
         "repetition_penalty_last": args.repetition_penalty_last,
         "presence_penalty": args.presence_penalty,
         "frequency_penalty": args.frequency_penalty,
-        "repetition_penalty_range": args.repetition_penalty_range,
         "typical_p": args.typical_p,
-        "guidance_scale": args.guidance_scale,
-        "penalty_alpha": args.penalty_alpha,
         "mirostat_mode": args.mirostat_mode,
         "mirostat_tau": args.mirostat_tau,
         "mirostat_eta": args.mirostat_eta,
-        "temperature_last": args.temperature_last,
-        "do_sample": args.do_sample,
-        */
         "stream": true
     });
 
